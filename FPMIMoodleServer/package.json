@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "pg-promise": "^11.5.4",
+    "xlsx": "^0.18.5"
+  }
+}

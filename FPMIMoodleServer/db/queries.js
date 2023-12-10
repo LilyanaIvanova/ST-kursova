@@ -1,47 +1,43 @@
-const Pool = require('pg').Pool
-
-const pool = new Pool({
-  user: 'admin',
-  host: 'localhost', 
-  database: 'student_data',
-  password: 'admin',
-  port: 5432,
-})
-const XLSX = require('xlsx');
-const pgp = require('pg-promise')();
-
-const dbConfig = {
-  host: 'localhost',
-  port: '5432',
-  database: 'uni_info',
-  user: 'postgres',
-  password: 'g@lin123', 
-};
+const mysql = require('mysql');
 
 
-const db = pgp(dbConfig);
+const moodleConnection = mysql.createConnection({
+  host: 'your-moodle-database-host',
+  user: 'your-moodle-database-username',
+  password: 'your-moodle-database-password',
+  database: 'your-moodle-database-name'
+});
+const localConnection = mysql.createConnection({
+  host: 'your-local-database-host',
+  user: 'your-local-database-username',
+  password: 'your-local-database-password',
+  database: 'your-local-database-name'
+});
 
 
-const workbook = XLSX.readFileSync('C:/Users/User/Downloads/RawStudentData.xlsx');
-const sheetName = 'Simple';
-const worksheet = workbook.Sheets[sheetName];
+moodleConnection.connect();
 
 
-const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 }).filter(row => row.some(cell => cell !== null));
+localConnection.connect();
 
 
-const tableName = 'student_info';
-const columns = ['mail', 'oks', 'course', 'fac', 'fac_num', 'grp', 'full_name', 'spec', 'status'];
-const insertQuery = pgp.helpers.insert(data, columns, { table: tableName });
+const query = 'SELECT * FROM your_moodle_table';
+moodleConnection.query(query, (error, results, fields) => {
+  if (error) throw error;
 
 
+  results.forEach(result => {
+    const insertQuery = 'INSERT INTO your_local_table (column1, column2, ...) VALUES (?, ?, ...)';
+    const values = [result.column1, result.column2, ...];
 
-console.log(insertQuery);
-db.none(insertQuery)
-  .then(() => {
-    console.log('Data inserted successfully!');
-    pgp.end();
-  })
-  .catch(error => {
-    console.error('Error inserting data:', error);
+    localConnection.query(insertQuery, values, (insertError, insertResults, insertFields) => {
+      if (insertError) throw insertError;
+
+      console.log('Data inserted successfully:', insertResults);
+    });
   });
+
+  
+  moodleConnection.end();
+  localConnection.end();
+});end();

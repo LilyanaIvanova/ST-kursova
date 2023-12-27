@@ -1,43 +1,32 @@
-const mysql = require('mysql');
+
+const { initializeApp } = require('firebase/app');
+const { getDatabase, ref, set } = require('firebase/database');
+const XLSX = require('xlsx');
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCGqwP_0Wo9VlbJfzbEVUPuYoHAkjK4AU",
+  authDomain: "fpmi-intermediary.firebaseapp.com",
+  projectId: "fpmi-intermediary",
+  storageBucket: "fpmi-intermediary.appspot.com",
+  messagingSenderId: "201216745483",
+  appId: "1:201216745483:web:42b4ff71a8001065f7270e",
+  measurementId: "G-648MRCSYVD"
+};
 
 
-const moodleConnection = mysql.createConnection({
-  host: 'your-moodle-database-host',
-  user: 'your-moodle-database-username',
-  password: 'your-moodle-database-password',
-  database: 'your-moodle-database-name'
-});
-const localConnection = mysql.createConnection({
-  host: 'your-local-database-host',
-  user: 'your-local-database-username',
-  password: 'your-local-database-password',
-  database: 'your-local-database-name'
-});
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
 
 
-moodleConnection.connect();
+function uploadExcelToFirebase(filePath) {
+  const workbook = XLSX.readFile(filePath);
+  const sheetName = workbook.SheetNames[0]; 
+  const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[Simple]);
 
-
-localConnection.connect();
-
-
-const query = 'SELECT * FROM your_moodle_table';
-moodleConnection.query(query, (error, results, fields) => {
-  if (error) throw error;
-
-
-  results.forEach(result => {
-    const insertQuery = 'INSERT INTO your_local_table (column1, column2, ...) VALUES (?, ?, ...)';
-    const values = [result.column1, result.column2, ...];
-
-    localConnection.query(insertQuery, values, (insertError, insertResults, insertFields) => {
-      if (insertError) throw insertError;
-
-      console.log('Data inserted successfully:', insertResults);
-    });
+  jsonData.forEach((data, index) => {
+    set(ref(database, 'students/' + index), data)
+      .then(() => console.log(`Data uploaded for student ${index}`))
+      .catch((error) => console.error(`Failed to upload data for student ${index}:`, error));
   });
-
-  
-  moodleConnection.end();
-  localConnection.end();
-});end();
+}
+uploadExcelToFirebase('C:\Users\User\Desktop\RawStudentData.xlsx');
